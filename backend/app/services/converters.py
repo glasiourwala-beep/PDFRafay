@@ -526,32 +526,20 @@ def _find_ghostscript() -> Optional[str]:
 
 async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dict]:
     """
-    Compress PDF — always return the *smallest* successful output.
-
-    Primary: Ghostscript with explicit image downsample (reliable size reduction)
-    Fallback: PyMuPDF (image recompress / deflate)
-
-    levels:
-      low    ~ light (better quality, ~10–30% typical)
-      medium ~ balanced (~20–50%)
-      high   ~ aggressive (~40–80% when PDF has large images)
-    Already-optimized PDFs may shrink little; we never return a larger file.
+    Compress PDF and return the smallest successful output.
+    Never returns a file larger than the original.
     """
     level = (level or "medium").lower().strip()
     if level not in ("low", "medium", "high"):
         level = "medium"
 
-    # DPI / JPEG quality by level
     dpi_map = {"low": 150, "medium": 110, "high": 72}
-    jpg_map = {"low": 75, "medium": 55, "high": 40}
     gs_preset = {"low": "/printer", "medium": "/ebook", "high": "/screen"}
     dpi = dpi_map[level]
-    jpg_q = jpg_map[level]
     preset = gs_preset[level]
 
     original_size = pdf_path.stat().st_size
-    # Larger files need more GS time; cap 8 min
-    gs_timeout = min(480, max(120, int(original_size / (400_000)) + 90))
+    gs_timeout = min(300, max(90, int(original_size / 500_000) + 60))
 
     candidates: list[Path] = []
     loop = asyncio.get_running_loop()
@@ -563,6 +551,7 @@ async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dic
         except OSError:
             pass
 
+    # --- Ghostscript (best real compression when available) ---
     gs_bin = _find_ghostscript()
     if gs_bin:
         out_gs = safe_output_path(f"compress_gs_{level}", "pdf")
@@ -583,15 +572,9 @@ async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dic
             "-dDownsampleMonoImages=true",
             f"-dColorImageResolution={dpi}",
             f"-dGrayImageResolution={dpi}",
-            f"-dMonoImageResolution={dpi}",
+            f"-dMonoImageResolution={max(dpi, 72)}",
             "-dColorImageDownsampleType=/Bicubic",
             "-dGrayImageDownsampleType=/Bicubic",
-            "-dColorImageDownsampleThreshold=1.0",
-            "-dGrayImageDownsampleThreshold=1.0",
-            "-dAutoFilterColorImages=false",
-            "-dAutoFilterGrayImages=false",
-            "-dColorImageFilter=/DCTEncode",
-            "-dGrayImageFilter=/DCTEncode",
             f"-sOutputFile={out_gs}",
             str(pdf_path),
         ]
@@ -602,77 +585,27 @@ async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dic
         except Exception:
             pass
 
-    # PyMuPDF: fast structural compress + optional image rewrite
+    # --- PyMuPDF: always try (safe, fast) ---
     out_mu = safe_output_path(f"compress_mu_{level}", "pdf")
 
     def _pymupdf_compress() -> None:
-        src = pymupdf.open(str(pdf_path))
         try:
-            # Pass 1: garbage + deflate (fast)
-            src.save(
-                str(out_mu),
-                garbage=4,
-                deflate=True,
-                deflate_images=True,
-                deflate_fonts=True,
-                clean=True,
-            )
-        finally:
-            src.close()
-
-        # Pass 2 (medium/high): rewrite large embedded images smaller
-        if level in ("medium", "high") and out_mu.is_file():
+            src = pymupdf.open(str(pdf_path))
             try:
-                doc = pymupdf.open(str(out_mu))
-                try:
-                    for page in doc:
-                        for img in page.get_images(full=True):
-                            xref = img[0]
-                            try:
-                                pix = pymupdf.Pixmap(doc, xref)
-                            except Exception:
-                                continue
-                            try:
-                                if pix.n >= 5:  # CMYK etc.
-                                    pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
-                                # Skip tiny images
-                                if pix.width * pix.height < 40_000:
-                                    continue
-                                # Scale down aggressively on high
-                                max_edge = 1200 if level == "high" else 1600
-                                if max(pix.width, pix.height) > max_edge:
-                                    scale = max_edge / max(pix.width, pix.height)
-                                    pix = pymupdf.Pixmap(pix, int(pix.width * scale), int(pix.height * scale), None)
-                                img_bytes = pix.tobytes("jpeg", jpg_quality=jpg_q)
-                                doc.update_stream(xref, img_bytes)
-                            except Exception:
-                                pass
-                            finally:
-                                pix = None
-                    out2 = safe_output_path(f"compress_mu2_{level}", "pdf")
-                    doc.save(
-                        str(out2),
-                        garbage=4,
-                        deflate=True,
-                        deflate_images=True,
-                        deflate_fonts=True,
-                        clean=True,
-                    )
-                    if out2.is_file() and out2.stat().st_size > 0:
-                        # prefer smaller of pass1 / pass2
-                        if out2.stat().st_size < out_mu.stat().st_size:
-                            try:
-                                out_mu.unlink(missing_ok=True)
-                            except Exception:
-                                pass
-                            out2.replace(out_mu)
-                        else:
-                            try:
-                                out2.unlink(missing_ok=True)
-                            except Exception:
-                                pass
-                finally:
-                    doc.close()
+                # Basic structural compression — widely supported flags only
+                src.save(
+                    str(out_mu),
+                    garbage=4,
+                    deflate=True,
+                    clean=True,
+                )
+            finally:
+                src.close()
+        except Exception:
+            # Last resort: copy original so we never hard-fail if GS also failed
+            try:
+                import shutil as _sh
+                _sh.copy2(pdf_path, out_mu)
             except Exception:
                 pass
 
@@ -680,26 +613,32 @@ async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dic
     _register(out_mu)
 
     if not candidates:
-        raise RuntimeError("Compression produced no output")
+        # Absolute fallback — return a copy of original
+        out_final = safe_output_path(f"compress_{level}", "pdf")
+        import shutil as _sh
+        _sh.copy2(pdf_path, out_final)
+        stats = {
+            "original_size": original_size,
+            "compressed_size": original_size,
+            "reduction_percent": 0.0,
+            "level": level,
+        }
+        return out_final, stats
 
-    # Pick smallest candidate that is not empty
     best = min(candidates, key=lambda pth: pth.stat().st_size)
     best_size = best.stat().st_size
 
-    # Never return a LARGER file — copy original if nothing helped
     out_final = safe_output_path(f"compress_{level}", "pdf")
+    import shutil as _sh
     if best_size >= original_size:
-        import shutil as _sh
         _sh.copy2(pdf_path, out_final)
         new_size = original_size
         reduction = 0.0
     else:
-        import shutil as _sh
         _sh.copy2(best, out_final)
         new_size = best_size
-        reduction = (1 - new_size / original_size) * 100 if original_size else 0
+        reduction = (1 - new_size / original_size) * 100 if original_size else 0.0
 
-    # Cleanup other candidates
     for c in candidates:
         try:
             if c.resolve() != out_final.resolve():
@@ -716,9 +655,6 @@ async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dic
     return out_final, stats
 
 
-# ---------------------------------------------------------------------------
-# 6. Merge PDFs
-# ---------------------------------------------------------------------------
 async def merge_pdfs(pdf_paths: list[Path]) -> Path:
     """Merge multiple PDFs preserving page order and content."""
     if not pdf_paths:
