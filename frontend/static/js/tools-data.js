@@ -94,7 +94,7 @@ PDFRafay.TOOLS = [
         choices: [
           { value: "low", label: "Low Compression", hint: "Light compression · Best quality · ~10–25% smaller size" },
           { value: "medium", label: "Recommended (Medium)", hint: "Optimal balance · Great quality · ~25–50% smaller size" },
-          { value: "high", label: "High Compression", hint: "Maximum compression · Smallest file size · ~40–80% smaller size" }
+          { value: "high", label: "High Compression", hint: "Strongest compression (best for image-heavy PDFs; already-small files may barely shrink)" }
         ],
         default: "medium"
       }

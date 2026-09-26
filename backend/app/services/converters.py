@@ -526,82 +526,194 @@ def _find_ghostscript() -> Optional[str]:
 
 async def compress_pdf(pdf_path: Path, level: str = "medium") -> tuple[Path, dict]:
     """
-    Compress PDF.
-    Primary: Ghostscript (if installed)
-    Fallback: PyMuPDF (always available) — works without Ghostscript
-    levels: low (high quality), medium, high (smaller)
+    Compress PDF — always return the *smallest* successful output.
+
+    Primary: Ghostscript with explicit image downsample (reliable size reduction)
+    Fallback: PyMuPDF (image recompress / deflate)
+
+    levels:
+      low    ~ light (better quality, ~10–30% typical)
+      medium ~ balanced (~20–50%)
+      high   ~ aggressive (~40–80% when PDF has large images)
+    Already-optimized PDFs may shrink little; we never return a larger file.
     """
-    settings = {
-        "low": "/prepress",
-        "medium": "/ebook",
-        "high": "/screen",
-    }
-    gs_setting = settings.get(level, "/ebook")
-    out = safe_output_path(f"compress_{level}", "pdf")
+    level = (level or "medium").lower().strip()
+    if level not in ("low", "medium", "high"):
+        level = "medium"
+
+    # DPI / JPEG quality by level
+    dpi_map = {"low": 150, "medium": 110, "high": 72}
+    jpg_map = {"low": 75, "medium": 55, "high": 40}
+    gs_preset = {"low": "/printer", "medium": "/ebook", "high": "/screen"}
+    dpi = dpi_map[level]
+    jpg_q = jpg_map[level]
+    preset = gs_preset[level]
+
+    original_size = pdf_path.stat().st_size
+    # Larger files need more GS time; cap 8 min
+    gs_timeout = min(480, max(120, int(original_size / (400_000)) + 90))
+
+    candidates: list[Path] = []
     loop = asyncio.get_running_loop()
-    used_gs = False
+
+    def _register(path: Path) -> None:
+        try:
+            if path.is_file() and path.stat().st_size > 0:
+                candidates.append(path)
+        except OSError:
+            pass
 
     gs_bin = _find_ghostscript()
     if gs_bin:
+        out_gs = safe_output_path(f"compress_gs_{level}", "pdf")
         cmd = [
             gs_bin,
             "-sDEVICE=pdfwrite",
             "-dCompatibilityLevel=1.4",
-            f"-dPDFSETTINGS={gs_setting}",
+            f"-dPDFSETTINGS={preset}",
             "-dNOPAUSE",
             "-dQUIET",
             "-dBATCH",
-            f"-sOutputFile={out}",
+            "-dSAFER",
+            "-dDetectDuplicateImages=true",
+            "-dCompressFonts=true",
+            "-dSubsetFonts=true",
+            "-dDownsampleColorImages=true",
+            "-dDownsampleGrayImages=true",
+            "-dDownsampleMonoImages=true",
+            f"-dColorImageResolution={dpi}",
+            f"-dGrayImageResolution={dpi}",
+            f"-dMonoImageResolution={dpi}",
+            "-dColorImageDownsampleType=/Bicubic",
+            "-dGrayImageDownsampleType=/Bicubic",
+            "-dColorImageDownsampleThreshold=1.0",
+            "-dGrayImageDownsampleThreshold=1.0",
+            "-dAutoFilterColorImages=false",
+            "-dAutoFilterGrayImages=false",
+            "-dColorImageFilter=/DCTEncode",
+            "-dGrayImageFilter=/DCTEncode",
+            f"-sOutputFile={out_gs}",
             str(pdf_path),
         ]
         try:
-            code, stdout, stderr = await run_cmd(cmd, timeout=90)
-            if code == 0 and out.exists() and out.stat().st_size > 0:
-                used_gs = True
+            code, _, _ = await run_cmd(cmd, timeout=gs_timeout)
+            if code == 0:
+                _register(out_gs)
         except Exception:
-            used_gs = False
+            pass
 
-    if not used_gs:
-        # PyMuPDF fallback — no Ghostscript required
-        def _fallback():
-            src = pymupdf.open(str(pdf_path))
+    # PyMuPDF: fast structural compress + optional image rewrite
+    out_mu = safe_output_path(f"compress_mu_{level}", "pdf")
+
+    def _pymupdf_compress() -> None:
+        src = pymupdf.open(str(pdf_path))
+        try:
+            # Pass 1: garbage + deflate (fast)
+            src.save(
+                str(out_mu),
+                garbage=4,
+                deflate=True,
+                deflate_images=True,
+                deflate_fonts=True,
+                clean=True,
+            )
+        finally:
+            src.close()
+
+        # Pass 2 (medium/high): rewrite large embedded images smaller
+        if level in ("medium", "high") and out_mu.is_file():
             try:
-                if level == "high":
-                    # Stronger: rasterize pages at lower DPI + JPEG
-                    doc = pymupdf.open()
-                    try:
-                        for page in src:
-                            mat = pymupdf.Matrix(100 / 72, 100 / 72)
-                            pix = page.get_pixmap(matrix=mat, alpha=False)
-                            new_page = doc.new_page(width=page.rect.width, height=page.rect.height)
-                            img_bytes = pix.tobytes("jpeg", jpg_quality=45)
-                            new_page.insert_image(page.rect, stream=img_bytes)
-                        doc.save(str(out), garbage=4, deflate=True, clean=True)
-                    finally:
-                        doc.close()
-                else:
-                    # Lossless-ish cleanup (medium / low)
-                    src.save(str(out), garbage=4, deflate=True, clean=True)
-            finally:
-                src.close()
-            return out
+                doc = pymupdf.open(str(out_mu))
+                try:
+                    for page in doc:
+                        for img in page.get_images(full=True):
+                            xref = img[0]
+                            try:
+                                pix = pymupdf.Pixmap(doc, xref)
+                            except Exception:
+                                continue
+                            try:
+                                if pix.n >= 5:  # CMYK etc.
+                                    pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
+                                # Skip tiny images
+                                if pix.width * pix.height < 40_000:
+                                    continue
+                                # Scale down aggressively on high
+                                max_edge = 1200 if level == "high" else 1600
+                                if max(pix.width, pix.height) > max_edge:
+                                    scale = max_edge / max(pix.width, pix.height)
+                                    pix = pymupdf.Pixmap(pix, int(pix.width * scale), int(pix.height * scale), None)
+                                img_bytes = pix.tobytes("jpeg", jpg_quality=jpg_q)
+                                doc.update_stream(xref, img_bytes)
+                            except Exception:
+                                pass
+                            finally:
+                                pix = None
+                    out2 = safe_output_path(f"compress_mu2_{level}", "pdf")
+                    doc.save(
+                        str(out2),
+                        garbage=4,
+                        deflate=True,
+                        deflate_images=True,
+                        deflate_fonts=True,
+                        clean=True,
+                    )
+                    if out2.is_file() and out2.stat().st_size > 0:
+                        # prefer smaller of pass1 / pass2
+                        if out2.stat().st_size < out_mu.stat().st_size:
+                            try:
+                                out_mu.unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                            out2.replace(out_mu)
+                        else:
+                            try:
+                                out2.unlink(missing_ok=True)
+                            except Exception:
+                                pass
+                finally:
+                    doc.close()
+            except Exception:
+                pass
 
-        out = await loop.run_in_executor(None, _fallback)
+    await loop.run_in_executor(None, _pymupdf_compress)
+    _register(out_mu)
 
-    if not out.exists() or out.stat().st_size == 0:
-        raise RuntimeError("Compression produced empty output")
+    if not candidates:
+        raise RuntimeError("Compression produced no output")
 
-    original_size = pdf_path.stat().st_size
-    new_size = out.stat().st_size
-    reduction = max(0, (1 - new_size / original_size) * 100) if original_size else 0
+    # Pick smallest candidate that is not empty
+    best = min(candidates, key=lambda pth: pth.stat().st_size)
+    best_size = best.stat().st_size
+
+    # Never return a LARGER file — copy original if nothing helped
+    out_final = safe_output_path(f"compress_{level}", "pdf")
+    if best_size >= original_size:
+        import shutil as _sh
+        _sh.copy2(pdf_path, out_final)
+        new_size = original_size
+        reduction = 0.0
+    else:
+        import shutil as _sh
+        _sh.copy2(best, out_final)
+        new_size = best_size
+        reduction = (1 - new_size / original_size) * 100 if original_size else 0
+
+    # Cleanup other candidates
+    for c in candidates:
+        try:
+            if c.resolve() != out_final.resolve():
+                c.unlink(missing_ok=True)
+        except Exception:
+            pass
 
     stats = {
         "original_size": original_size,
         "compressed_size": new_size,
-        "reduction_percent": round(reduction, 1),
+        "reduction_percent": round(max(0.0, reduction), 1),
         "level": level,
     }
-    return out, stats
+    return out_final, stats
 
 
 # ---------------------------------------------------------------------------

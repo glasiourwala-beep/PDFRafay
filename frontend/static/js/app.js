@@ -693,13 +693,21 @@
     const summary = $("#success-summary");
     if (summary) {
       if (stats.origSize && stats.compSize) {
-        const orig = formatSize(parseInt(stats.origSize, 10));
-        const comp = formatSize(parseInt(stats.compSize, 10));
-        const pct = stats.reduction || "0";
+        const origN = parseInt(stats.origSize, 10);
+        const compN = parseInt(stats.compSize, 10);
+        const orig = formatSize(origN);
+        const comp = formatSize(compN);
+        const pct = parseFloat(stats.reduction || "0") || 0;
+        let msg;
+        if (pct <= 0 || compN >= origN) {
+          msg = `File is already optimized (${orig}). Further compression would not reduce size.`;
+        } else {
+          msg = `Compressed from ${orig} to ${comp} (${pct}% smaller)`;
+        }
         summary.innerHTML = `
           <div class="success-stats-badge">
             ${getIconSvg('check', 20)}
-            <span>Compressed from ${orig} to ${comp} (${pct}% smaller!)</span>
+            <span>${msg}</span>
           </div>
         `;
       } else {
