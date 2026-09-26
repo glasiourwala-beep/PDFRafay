@@ -589,6 +589,15 @@
     currentXhr = new XMLHttpRequest();
     const startTime = Date.now();
 
+    function switchToProcessingStage() {
+      // Upload body fully sent — server is working; show spinner (not upload bar)
+      $("#stage-upload")?.classList.add("hidden");
+      $("#stage-processing")?.classList.remove("hidden");
+      const msg = $("#process-msg");
+      if (msg) msg.textContent = (currentTool && currentTool.processHint) || "Processing your file…";
+      scrollToWorkspaceTop();
+    }
+
     currentXhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         const pct = Math.round((e.loaded / e.total) * 100);
@@ -602,18 +611,24 @@
         $("#upload-bytes").textContent = `${formatSize(e.loaded)} / ${formatSize(e.total)}`;
         $("#upload-speed").textContent = speedBps > 0 ? `${formatSize(speedBps)}/s` : "Calculating...";
         $("#upload-eta").textContent = etaSeconds > 0 ? `${etaSeconds}s remaining` : "Almost done";
+
+        // At 100% upload, immediately move to processing UI (server still working)
+        if (pct >= 100) {
+          switchToProcessingStage();
+        }
       }
+    };
+
+    // Fires when request body has been fully uploaded (before response arrives)
+    currentXhr.upload.onload = function () {
+      switchToProcessingStage();
     };
 
     currentXhr.onload = function () {
       if (currentXhr.status >= 200 && currentXhr.status < 300) {
-        // Upload finished -> Processing Stage
-        $("#stage-upload")?.classList.add("hidden");
-        $("#stage-processing")?.classList.remove("hidden");
-        $("#process-msg").textContent = currentTool.processHint || "Processing your file...";
-        scrollToWorkspaceTop();
+        // Ensure processing UI was shown (fast responses / missed upload events)
+        switchToProcessingStage();
 
-        // Process response blob
         const blob = currentXhr.response;
         const contentDisp = currentXhr.getResponseHeader("Content-Disposition");
         let filename = `${currentTool.id}_output.pdf`;
@@ -622,18 +637,31 @@
           if (match && match[1]) filename = match[1];
         }
 
-        // Stats headers if available (Compress PDF)
         const origSize = currentXhr.getResponseHeader("X-Original-Size");
         const compSize = currentXhr.getResponseHeader("X-Compressed-Size");
         const reduction = currentXhr.getResponseHeader("X-Reduction-Percent");
 
+        // Keep processing spinner visible briefly so users see the stage
         setTimeout(() => {
           showSuccess(blob, filename, { origSize, compSize, reduction });
-        }, 600);
+        }, 700);
 
       } else {
         let errorMsg = "Server error occurred.";
         try {
+          // responseType=blob — parse error JSON from blob if needed
+          if (currentXhr.response && currentXhr.response.type && currentXhr.response.type.indexOf("json") !== -1) {
+            const reader = new FileReader();
+            reader.onload = function () {
+              try {
+                const res = JSON.parse(reader.result);
+                errorMsg = res.detail || res.message || errorMsg;
+              } catch (_) {}
+              showError(getFriendlyError(errorMsg));
+            };
+            reader.readAsText(currentXhr.response);
+            return;
+          }
           const res = JSON.parse(currentXhr.responseText);
           errorMsg = res.detail || res.message || errorMsg;
         } catch (_) {}
