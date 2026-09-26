@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="theme-color" content="#0c0f16" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Free PDF Tools Online — Convert, Compress & Merge | PDFRafay</title>
   <meta name="description" content="Free online PDF tools by PDFRafay. Convert Word to PDF, compress PDFs, merge, split, protect, rotate and watermark files fast—no install required." />
-  <link rel="canonical" href="https://mjpdf.onrender.com/" />
+  <link rel="canonical" href="https://pdfrafay.onrender.com/" />
   
   <!-- Favicons & Icons -->
   <link rel="icon" href="/static/img/logo-mark.svg" type="image/svg+xml" />
@@ -15,8 +16,8 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Free PDF Tools Online — Convert, Compress & Merge | PDFRafay" />
   <meta property="og:description" content="Free online PDF tools by PDFRafay. Convert Word to PDF, compress, merge, split, protect and manage PDFs in your browser." />
-  <meta property="og:url" content="https://mjpdf.onrender.com/" />
-  <meta property="og:image" content="https://mjpdf.onrender.com/static/img/logo.jpg" />
+  <meta property="og:url" content="https://pdfrafay.onrender.com/" />
+  <meta property="og:image" content="https://pdfrafay.onrender.com/static/img/logo.jpg" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Free PDF Tools Online — Convert, Compress & Merge | PDFRafay" />
@@ -36,11 +37,11 @@
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "PDFRafay",
-    "url": "https://mjpdf.onrender.com/",
+    "url": "https://pdfrafay.onrender.com/",
     "description": "Free online PDF tools to convert, compress, merge, split, watermark and protect PDF files.",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://mjpdf.onrender.com/?q={search_term_string}",
+      "target": "https://pdfrafay.onrender.com/?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   }
@@ -51,9 +52,9 @@
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "PDFRafay",
-    "url": "https://mjpdf.onrender.com/",
+    "url": "https://pdfrafay.onrender.com/",
     "email": "glasiourwala@gmail.com",
-    "logo": "https://mjpdf.onrender.com/static/img/logo.jpg"
+    "logo": "https://pdfrafay.onrender.com/static/img/logo.jpg"
   }
   </script>
 
@@ -62,7 +63,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "PDFRafay PDF Toolkit",
-    "url": "https://mjpdf.onrender.com/",
+    "url": "https://pdfrafay.onrender.com/",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "All (Web Browser)",
     "offers": {
@@ -185,6 +186,7 @@
           </div>
 
           <!-- Dynamic Grid Container -->
+          <h2 class="tools-heading">PDF Tools</h2>
           <div class="tools-grid" id="tools-grid"></div>
         </div>
       </section>
@@ -257,6 +259,24 @@
     </div>
 
     <!-- WORKSPACE VIEW (Active Tool Execution View) -->
+    
+      <section class="section seo-content" id="more-seo">
+        <div class="container narrow">
+          <h2>Free online PDF tools for students and professionals</h2>
+          <p>PDFRafay helps you work with PDF files in the browser: convert Word documents and PowerPoint presentations to PDF, compress large PDFs for email, merge multiple files into one, split PDFs into separate pages, extract or delete pages, convert images to PDF, export PDF pages as JPG or PNG, rotate and reorder pages, add text watermarks, and password-protect or unlock PDFs when you know the password.</p>
+          <h2>Why use PDFRafay PDF tools?</h2>
+          <p>No installation is required. Upload a file, run the tool on the server, and download the result. Processing uses secure HTTPS. Temporary files are cleaned up after your job finishes so documents are not kept permanently on the server.</p>
+          <h3>Convert Office files to PDF</h3>
+          <p>Share Word and PowerPoint files as PDF so layout stays consistent across devices. Ideal for assignments, reports, and presentations.</p>
+          <h3>Compress and organize PDF files</h3>
+          <p>Reduce PDF file size for faster uploads, combine several PDFs into one packet, or split a long PDF into single-page files when you only need part of a document.</p>
+          <h3>Secure your documents</h3>
+          <p>Add a password to restrict opening a PDF, or unlock a file when you already have the password. Watermark pages with your name or organization for draft sharing.</p>
+          <h2>How to get started</h2>
+          <p>Open a tool such as <a href="/word-to-pdf">Word to PDF</a>, <a href="/compress-pdf">Compress PDF</a>, or <a href="/merge-pdf">Merge PDF</a>, select your file, and download when processing completes. Explore all tools from the home page grid.</p>
+        </div>
+      </section>
+
     <div id="view-workspace" class="workspace-container hidden">
       <div class="container-narrow">
         
@@ -272,7 +292,7 @@
         <!-- Tool Header -->
         <div class="tool-header">
           <div class="tool-header-badge" id="tool-header-icon"></div>
-          <h1 id="tool-header-title">Tool Title</h1>
+          <h2 id="tool-header-title">Tool Title</h2>
           <p id="tool-header-desc">Tool description narrative</p>
         </div>
 
@@ -315,7 +335,7 @@
 
           <!-- UPLOAD STAGE -->
           <div id="stage-upload" class="stage-box hidden" aria-live="polite">
-            <h2 class="stage-title">Uploading File to Server...</h2>
+            <p class="stage-title" class="stage-title">Uploading File to Server...</p>
             <div class="progress-container">
               <div class="progress-track"><div class="progress-fill" id="upload-fill"></div></div>
               <div class="progress-meta-grid">
@@ -332,7 +352,7 @@
             <div class="spinner-wrap">
               <div class="spinner-ring"></div>
             </div>
-            <h2 class="stage-title" id="process-msg">Processing Document...</h2>
+            <p class="stage-title" class="stage-title" id="process-msg">Processing Document...</p>
             <p class="processing-hint">Please hold tight while our server completes your task. Do not close or refresh this page.</p>
           </div>
 
@@ -341,7 +361,7 @@
             <div class="success-icon-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-            <h2 class="stage-title">Your File is Ready!</h2>
+            <p class="stage-title" class="stage-title">Your File is Ready!</p>
             <div id="success-summary"></div>
             <div class="success-actions">
               <a href="#" class="btn btn-primary btn-lg" id="download-btn" download>
@@ -357,7 +377,7 @@
             <div class="error-icon-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
-            <h2 class="stage-title">Unable to Complete Task</h2>
+            <p class="stage-title" class="stage-title">Unable to Complete Task</p>
             <p class="error-message" id="error-msg">Something went wrong during file processing.</p>
             <button type="button" class="btn btn-primary" id="retry-btn">Try Again</button>
           </div>
@@ -378,7 +398,7 @@
       <div class="container-narrow">
         
         <div id="page-about" class="spa-page hidden">
-          <h1>About PDFRafay</h1>
+          <h2>About PDFRafay</h2>
           <p>PDFRafay is a fast, reliable, online PDF toolkit designed for everyday document tasks. Convert Office files, compress large PDFs, merge and split documents, and secure files with passwords—all inside your browser.</p>
           
           <h2 style="margin-top:2rem;">Our Technology</h2>
@@ -387,7 +407,7 @@
           <div class="dev-card">
             <h3>Lead Developer</h3>
             <p><strong>Muhammad Rafay Ghaffar</strong><br>Pakistan</p>
-            <p style="margin-top:0.5rem;">Email: <a href="mailto:glasiourwala@gmail.com">glasiourwala@gmail.com</a></p>
+            <p style="margin-top:0.5rem;">Email: <a href="mailto:glasiourwala@gmail.com">glasiourwala [at] gmail.com</a></p>
             
             <div class="social-row" aria-label="Social Profiles">
               <a class="social-btn" href="https://www.tiktok.com/@mjrafay?_r=1&_t=ZS-99VXHj6Lnxi" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
@@ -404,23 +424,23 @@
         </div>
 
         <div id="page-contact" class="spa-page hidden">
-          <h1>Contact Us</h1>
+          <h2>Contact Us</h2>
           <p>Have questions, feedback, or need technical assistance with PDFRafay tools? Reach out to our developer team anytime.</p>
-          <p style="margin-top:1rem;"><strong>Email:</strong> <a href="mailto:glasiourwala@gmail.com">glasiourwala@gmail.com</a></p>
+          <p style="margin-top:1rem;"><strong>Email:</strong> <a href="mailto:glasiourwala@gmail.com">glasiourwala [at] gmail.com</a></p>
         </div>
 
         <div id="page-privacy" class="spa-page hidden">
-          <h1>Privacy Policy</h1>
+          <h2>Privacy Policy</h2>
           <p>PDFRafay respects your privacy. All file uploads are transmitted securely via HTTPS and processed solely to execute the requested tool functionality. Files are automatically deleted from server memory after completion.</p>
         </div>
 
         <div id="page-cookie" class="spa-page hidden">
-          <h1>Cookie Policy</h1>
+          <h2>Cookie Policy</h2>
           <p>We use essential cookies to maintain core site operations (such as saving your cookie preferences). No third-party tracking or advertising cookies are set without your consent.</p>
         </div>
 
         <div id="page-terms" class="spa-page hidden">
-          <h1>Terms of Service</h1>
+          <h2>Terms of Service</h2>
           <p>By using PDFRafay tools, you agree to process documents lawfully and maintain rights to any files uploaded. PDFRafay is provided as-is without warranty.</p>
         </div>
 
@@ -450,7 +470,7 @@
         </div>
 
         <div class="footer-col">
-          <h4>PDF Tools</h4>
+          <h3>PDF Tools</h3>
           <a href="/word-to-pdf">Word to PDF</a>
           <a href="/compress-pdf">Compress PDF</a>
           <a href="/merge-pdf">Merge PDF</a>
@@ -459,7 +479,7 @@
         </div>
 
         <div class="footer-col">
-          <h4>Navigation</h4>
+          <h3>Navigation</h3>
           <a href="/">Home</a>
           <a href="/#tools">All Tools</a>
           <a href="/about">About Us</a>
@@ -467,7 +487,7 @@
         </div>
 
         <div class="footer-col">
-          <h4>Legal</h4>
+          <h3>Legal</h3>
           <a href="/privacy-policy">Privacy Policy</a>
           <a href="/cookie-policy">Cookie Policy</a>
           <a href="/terms">Terms of Service</a>
@@ -483,7 +503,7 @@
 
   <!-- GDPR Cookie Banner -->
   <div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-labelledby="cookie-title">
-    <h4 id="cookie-title">We value your privacy</h4>
+    <h2 id="cookie-title">We value your privacy</h2>
     <p>We use essential cookies to ensure PDFRafay operates smoothly. You can accept or manage cookie preferences anytime.</p>
     <div class="cookie-actions">
       <button type="button" class="btn btn-primary btn-sm" id="cookie-accept">Accept Cookies</button>

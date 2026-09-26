@@ -1265,7 +1265,7 @@ select.form-control option {
   max-width: 22rem;
 }
 
-.footer-col h4 {
+.footer-col h3 {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-main);
@@ -1410,3 +1410,5 @@ select.form-control option {
     grid-template-columns: 1fr;
   }
 }
+
+.tools-heading { font-size: 1.25rem; margin: 0 0 1rem; letter-spacing: -0.02em; }

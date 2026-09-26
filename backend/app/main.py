@@ -217,7 +217,7 @@ SPA_SHELL_PATHS = frozenset({
     "cookie-policy", "cookie-policy.html",
 })
 
-SITE_ORIGIN = "https://mjpdf.onrender.com"
+SITE_ORIGIN = "https://pdfrafay.onrender.com"
 
 # Unique SEO per tool (server-rendered so Google sees real titles/canonicals)
 TOOL_SEO = {

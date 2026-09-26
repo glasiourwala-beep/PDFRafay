@@ -6,7 +6,7 @@ window.PDFRafay = window.PDFRafay || {};
 
 PDFRafay.MAX_FILE_SIZE_MB = 100;
 PDFRafay.MAX_FILE_SIZE = 100 * 1024 * 1024;
-PDFRafay.SITE_ORIGIN = "https://mjpdf.onrender.com";
+PDFRafay.SITE_ORIGIN = "https://pdfrafay.onrender.com";
 
 PDFRafay.TOOLS = [
   {
