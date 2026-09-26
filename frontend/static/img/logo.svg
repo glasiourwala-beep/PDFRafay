@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" role="img" aria-label="PDFRafay">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#11141B"/>
+  <path d="M18 14h16c7.2 0 12 3.8 12 10.2 0 4.6-2.6 7.8-6.8 9.2L46 50h-7.2l-6.2-15.2H25V50h-7V14zm7 6.2v12.4h7.6c3.8 0 6-1.9 6-5.9s-2.2-6.5-6.2-6.5H25z" fill="url(#g)"/>
+  <text x="78" y="42" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="26" font-weight="700" fill="#eef2ff">PDFRafay</text>
+</svg>
