@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
+# Google Search Console
 Sitemap: https://pdfrafay.onrender.com/sitemap.xml

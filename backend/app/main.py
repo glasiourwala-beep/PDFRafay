@@ -419,6 +419,18 @@ if FRONTEND_DIR.exists():
         )
         return HTMLResponse(html)
 
+
+    @app.api_route("/google18dc84fb0bd443dc.html", methods=["GET", "HEAD"])
+    async def google_site_verification():
+        """Google Search Console domain verification file."""
+        path = _find_public_file("google18dc84fb0bd443dc.html")
+        if path:
+            return FileResponse(path, media_type="text/html; charset=utf-8")
+        return PlainTextResponse(
+            "google-site-verification: google18dc84fb0bd443dc.html\n",
+            media_type="text/html; charset=utf-8",
+        )
+
     @app.api_route("/robots.txt", methods=["GET", "HEAD"])
     async def robots():
         path = _find_public_file("robots.txt")
@@ -449,6 +461,13 @@ if FRONTEND_DIR.exists():
 
         if page_name == "api":
             return JSONResponse({"detail": "Not found"}, status_code=404)
+
+        # Google Search Console verification files (googleXXXX.html)
+        if page_name.startswith("google") and page_name.endswith(".html"):
+            path = _find_public_file(page_name)
+            if path:
+                return FileResponse(path, media_type="text/html; charset=utf-8")
+
 
         # Pretty legal/info paths
         # SPA shell: about/contact/legal → index.html (client router)
