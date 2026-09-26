@@ -195,6 +195,7 @@
 
     // Reset view states
     $("#view-home")?.classList.add("hidden");
+    $("#more-seo")?.classList.add("hidden");
     $("#view-workspace")?.classList.add("hidden");
     $("#view-page")?.classList.add("hidden");
     $$(".spa-page").forEach(p => p.classList.add("hidden"));
@@ -221,6 +222,7 @@
     // Default Home Route
     currentTool = null;
     $("#view-home")?.classList.remove("hidden");
+    $("#more-seo")?.classList.remove("hidden");
     updateDocumentMeta(
       "Free PDF Tools Online — Convert, Compress & Merge | PDFRafay",
       "Free online PDF tools by PDFRafay. Convert Word to PDF, compress PDFs, merge, split, protect, rotate and watermark files fast—no install required.",
