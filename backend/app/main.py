@@ -431,6 +431,18 @@ if FRONTEND_DIR.exists():
             media_type="text/html; charset=utf-8",
         )
 
+
+    @app.api_route("/ads.txt", methods=["GET", "HEAD"])
+    async def ads_txt():
+        """Google AdSense ads.txt"""
+        path = _find_public_file("ads.txt")
+        if path:
+            return FileResponse(path, media_type="text/plain; charset=utf-8")
+        return PlainTextResponse(
+            "google.com, pub-9117626548673910, DIRECT, f08c47fec0942fa0\n",
+            media_type="text/plain; charset=utf-8",
+        )
+
     @app.api_route("/robots.txt", methods=["GET", "HEAD"])
     async def robots():
         path = _find_public_file("robots.txt")
